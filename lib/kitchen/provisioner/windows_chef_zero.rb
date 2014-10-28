@@ -13,6 +13,7 @@ module Kitchen
       default_config :chef_omnibus_url, "http://www.getchef.com/chef/install.msi"
       default_config :windows_root_path, 'C:\Windows\Temp\kitchen'
       default_config :windows_chef_bindir, 'C:\opscode\chef\bin'
+      default_config :chef_solo, false 
       default_config :disabled_ohai_plugins, %w[
         azure c cloud ec2 rackspace eucalyptus command dmi dmi_common
         erlang gce groovy ip_scopes java keys lua linode mono network_listeners
@@ -78,7 +79,11 @@ module Kitchen
       end
 
       def windows_run_command
-        cmd = ["#{config[:windows_chef_bindir]}\\chef-client -z"]
+        cmd = if config[:chef_solo]
+          ["#{config[:windows_chef_bindir]}\\chef-solo"]
+        else
+          ["#{config[:windows_chef_bindir]}\\chef-client -z"]
+        end
         args = [
           "--config #{config[:windows_root_path]}\\client.rb",
           "--log_level #{config[:log_level]}"
@@ -109,7 +114,7 @@ module Kitchen
 
         File.open(File.join(sandbox_path, "install.ps1"), "wb") do |file|
           file.write <<-INSTALL.gsub(/^ {12}/, "")
-            $env:Path = "C:\\opscode\\chef\\bin"
+            $env:Path = "C:\\opscode\\chef\\bin;C:\\opscode\\chef\\embedded\\bin"
 
             # Retrieve current Chef version
             try {
